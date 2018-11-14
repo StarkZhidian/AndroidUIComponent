@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.zhidian.itemoperateview.MyConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/left_image_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher_background" />
+
+    <TextView
+        android:id="@+id/right_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        tools:text="123"
+        app:layout_constraintLeft_toRightOf="@id/left_image_view"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/left_image_view"
+        app:layout_constraintRight_toRightOf="parent"/>
+    <View
+        android:layout_width="match_parent"
+        android:background="@color/colorAccent"
+        android:layout_height="1px"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"/>
+
+</com.zhidian.itemoperateview.MyConstraintLayout>
