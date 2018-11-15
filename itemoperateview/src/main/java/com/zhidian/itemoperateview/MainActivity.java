@@ -48,15 +48,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
                                   View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
-                                  boolean isShowUp) {
-                // x 方向相对单击位置居中
+                                  int extraX, int extraY, boolean isShowUp) {
+                // x 方向相对单击位置 x 居中
                 return nowOffsetX - curShowViewSize[0] / 2;
             }
 
             @Override
             public int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
                                   View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
-                                  boolean isShowUp) {
+                                  int extraX, int extraY, boolean isShowUp) {
+                // y 方向根据对齐单击位置 y 坐标
+                if (!isShowUp) {
+                    return nowOffsetY - anchorView.getHeight();
+                }
                 return nowOffsetY;
             }
         });
@@ -65,6 +69,26 @@ public class MainActivity extends AppCompatActivity {
     // 仿微信聊天长按操作条
     private void example2() {
         itemOperateView = new ItemOperateView(this, R.layout.item_operate_layout_2);
+        itemOperateView.setGetOffsetCallback(new ItemOperateView.GetOffsetCallback() {
+            @Override
+            public int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
+                                  View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
+                                  int extraX, int extraY, boolean isShowUp) {
+                // x 方向相对 anchorView 左对齐
+                return nowOffsetX;
+            }
+
+            @Override
+            public int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
+                                  View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
+                                  int extraX, int extraY, boolean isShowUp) {
+                // y 方向根据对齐单击位置 y 坐标
+                if (!isShowUp) {
+                    return nowOffsetY - anchorView.getHeight();
+                }
+                return nowOffsetY;
+            }
+        });
     }
 
     private void init() {

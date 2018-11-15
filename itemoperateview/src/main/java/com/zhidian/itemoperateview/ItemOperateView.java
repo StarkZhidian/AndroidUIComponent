@@ -22,7 +22,7 @@ import java.util.Arrays;
  * contentView 是 popupWindow 中显示的内容 View，对应的触摸事件由调用者自由添加：
  * OperateItemPopupWindow popupWindow = new OperateItemPopupWindow(contentView);
  * popupWindow.setTitleBar(toolbar); // 可选，主要目的是为了防止 popupWindow 显示在 toolbar 上面
- * popupWindow.show(anchorView); // 显示，并附属在一个 view 上面
+ * popupWindow.show(anchorView); // 显示 ItemOperateView，显示的位置由参数指定的 view 的位置决定，
  * 在 Activity 摧毁的时候记得调用 popupWindow.dismiss() 方法，以防止窗体泄露:
  * if (popupWindow != null && popupWindow.isShowing()) {
  * popupWindow.dismiss();
@@ -45,9 +45,9 @@ public class ItemOperateView extends PopupWindow {
     private int[] contentViewAsUpSize = new int[2];
     private int[] contentViewAsDownSize = new int[2];
     private int[] defaultContentViewSize = new int[2];
-    private View nextShowView; // 下一次要显示的 view （在三个 view 之间）
-    private int[] nextShowViewSize; // 下一次要显示的 view 的尺寸
-    private boolean isNextShowUp = true; // 下一次显示是否显示在 anchorView 上面
+    protected View nextShowView; // 下一次要显示的 view （在三个 view 之间）
+    protected int[] nextShowViewSize; // 下一次要显示的 view 的尺寸
+    protected boolean isNextShowUp = true; // 下一次显示是否显示在 anchorView 上面
     private static int SCREEN_WIDTH; // 屏幕宽高
     private static int SCREEN_HEIGHT;
 
@@ -167,28 +167,36 @@ public class ItemOperateView extends PopupWindow {
         return maxY >= anchorViewY + anchorViewHeight + showViewHeight;
     }
 
-    private void getNextShowView(int[] anchorViewLocation, int anchorViewHeight, int minY, int maxY) {
+    /**
+     * 获取要显示的 view 和显示的位置（在 anchorView 上面还是下面）
+     *
+     * @param anchorViewLocationY anchorView 的左上角在其依附的 Window / 屏幕中的 y 坐标
+     * @param anchorViewHeight    anchorView 的高度
+     * @param minY                允许最小 y 值（防止超出 parent container / 屏幕的范围）
+     * @param maxY                允许最大 y 值（防止超出 parent container / 屏幕的范围）
+     */
+    private void getNextShowView(int anchorViewLocationY, int anchorViewHeight, int minY, int maxY) {
         // 默认先尝试显示在 anchorView 上面
-        if (judgeShowOnUp(contentViewAsUp, anchorViewLocation[1], contentViewAsUpSize[1], minY)) {
+        if (judgeShowOnUp(contentViewAsUp, anchorViewLocationY, contentViewAsUpSize[1], minY)) {
             nextShowView = contentViewAsUp;
             nextShowViewSize = contentViewAsUpSize;
             isNextShowUp = true;
         }
         if (nextShowView == null && judgeShowOnUp(
-                defaultContentView, anchorViewLocation[1], defaultContentViewSize[1], minY)) {
+                defaultContentView, anchorViewLocationY, defaultContentViewSize[1], minY)) {
             nextShowView = defaultContentView;
             nextShowViewSize = defaultContentViewSize;
             isNextShowUp = true;
         }
         // 如果 nextShowView 还是为 null，尝试显示在 anchorView 下面
         if (nextShowView == null && judgeShowOnDown(contentViewAsDown,
-                anchorViewLocation[1], anchorViewHeight, contentViewAsDownSize[1], maxY)) {
+                anchorViewLocationY, anchorViewHeight, contentViewAsDownSize[1], maxY)) {
             nextShowView = contentViewAsDown;
             nextShowViewSize = contentViewAsDownSize;
             isNextShowUp = false;
         }
         if (nextShowView == null && judgeShowOnDown(defaultContentView,
-                anchorViewLocation[1], anchorViewHeight, defaultContentViewSize[1], maxY)) {
+                anchorViewLocationY, anchorViewHeight, defaultContentViewSize[1], maxY)) {
             nextShowView = defaultContentView;
             nextShowViewSize = defaultContentViewSize;
             isNextShowUp = false;
@@ -200,7 +208,7 @@ public class ItemOperateView extends PopupWindow {
         // 默认 x 轴和 anchorView 左对齐 + extraX
         int xOffset = extraX;
         // y 方向偏移
-        int yOffset = extraY - anchorViewHeight;
+        int yOffset = extraY;
         // 如果显示在 anchorView 上面，重新计算 y 方向偏移量
         if (isNextShowUp) {
             if (DEBUG) {
@@ -213,84 +221,41 @@ public class ItemOperateView extends PopupWindow {
         return new int[]{xOffset, yOffset};
     }
 
-    private void adjustOffsetX(int[] offset, int minX, int maxX) {
-        // 防止水平方向偏移越界
-        offset[0] = (offset[0] < minX ? minX : offset[0]) >
-                maxX - nextShowViewSize[0] ? maxX - nextShowViewSize[0] : offset[0];
+    /**
+     * 调整 x y 方向的偏移值，防止其超出 parent container / 屏幕外
+     * @param offset 储存当前的 x y 方向偏移数组
+     * @param anchorViewWidth 依附 anchorView 的宽度
+     * @param anchorViewHeight 依附 anchorView 的高度
+     * @param anchorViewLocation 依附 anchorView 左上角在 Window / 屏幕中的位置（x, y）
+     * @param boundary 当前的显示边界坐标（minX, maxX, minY, maxY）
+     */
+    protected void adjustOffset(int[] offset, int anchorViewWidth, int anchorViewHeight,
+                                int[] anchorViewLocation, int[] boundary) {
+        // 防止 x 方向偏移越界
+        offset[0] = (offset[0] < boundary[0] ? boundary[0] : offset[0]) >
+                boundary[1] - nextShowViewSize[0] ? boundary[1] - nextShowViewSize[0] : offset[0];
+        // 防止 y 方向偏移越界
+        int yLocation = offset[1] + anchorViewLocation[1] + anchorViewHeight;
+        yLocation = yLocation < boundary[2] ? boundary[2] : yLocation;
+        yLocation = yLocation + nextShowViewSize[1] > boundary[3] ?
+                boundary[3] - nextShowViewSize[1] : yLocation;
+        offset[1] = yLocation - anchorViewLocation[1] - anchorViewHeight;
     }
 
     /**
-     * @param nowOffsetX 当前 x 方向的偏移值，当前为使得 curShowView 相对 anchorView 居中的偏移值
-     * @param curShowView 当前显示的 contentView
-     * @param curShowViewSize 当前显示的 contentView 的尺寸(width, height)
-     * @param anchorView 弹出 view 的依附 view
-     * @param anchorViewLocation anchorView 在其依附的 Window 中的坐标（x, y）
-     * @param boundaryCoordinate 当前的坐标值边界数组（minX, maxX, minY, maxY）
-     * @param isShowUp 是否显示在 anchorView 上方
-     * @return 最终的 x 方向的偏移值
+     * 获取 ItemOperateView 可以显示的坐标的临界值（minX, maxX, minY, maxY）
+     * @param anchorView ItemOperateView 依附的 view
+     * @param anchorViewLocation 用于储存 anchorView 在 Window / 屏幕中左上角坐标的数组（x, y）
+     * @return ItemOperateView 可以显示的坐标的临界值（minX, maxX, minY, maxY）
      */
-    protected int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
-                             View anchorView, int[] anchorViewLocation,
-                             int[] boundaryCoordinate, boolean isShowUp) {
-        if (getOffsetCallback != null) {
-            return getOffsetCallback.getOffsetX(nowOffsetX, curShowView, curShowViewSize,
-                    anchorView, anchorViewLocation, boundaryCoordinate, isShowUp);
+    private int[] getBoundaryCoordinate(View anchorView, int[] anchorViewLocation) {
+        if (anchorView == null || anchorViewLocation == null || anchorViewLocation.length < 2) {
+            if (DEBUG) {
+                Log.e(TAG, "getBoundaryCoordinate: argument illegal!");
+            }
+            return null;
         }
-        return nowOffsetX;
-    }
-
-    /**
-     * @param nowOffsetY 当前 y 方向的偏移值，如果显示在 anchorView 下方（isShowUp为 false），则为 0，
-     *                   如果显示在 anchorView 上方，则为 (anchorView.height + curShowView.height)
-     * @param curShowView 当前显示的 contentView
-     * @param curShowViewSize 当前显示的 contentView 的尺寸(width, height)
-     * @param anchorView 弹出 view 的依附 view
-     * @param anchorViewLocation anchorView 在其依附的 Window 中的坐标（x, y）
-     * @param boundaryCoordinate 当前的坐标值边界数组（minX, maxX, minY, maxY）
-     * @param isShowUp 是否显示在 anchorView 上方
-     * @return 最终 y 方向的偏移值
-     */
-    protected int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
-                             View anchorView, int[] anchorViewLocation,
-                             int[] boundaryCoordinate, boolean isShowUp) {
-        if (getOffsetCallback != null) {
-            return getOffsetCallback.getOffsetY(nowOffsetY, curShowView, curShowViewSize,
-                    anchorView, anchorViewLocation, boundaryCoordinate, isShowUp);
-        }
-        return nowOffsetY;
-    }
-
-    /**
-     * 显示当前 popupWindow，默认将 contentView 显示在描点 View 的上面
-     * 要显示的 contentView 判断流程：
-     * 显示在上面：contentViewAsUp -> defaultContentView；
-     * 显示在下面：contentViewAsDown -> defaultContentView
-     * contentViewAsUp 只能用于显示在 anchorView 上方
-     * contentViewAsDown 只能用于显示在 anchorView 下方
-     * defaultContentView 可以用于 anchorView 上下显示
-     *
-     * @param anchorView popupWindow 显示依附的描点 View
-     */
-    public void show(@NonNull View anchorView) {
-        show(anchorView, 0, 0);
-    }
-
-    public void show(@NonNull View anchorView, int extraX, int extraY) {
-        if (anchorView == null) {
-            throw new IllegalArgumentException(TAG + "argument anchorView can not be null!");
-        }
-        nextShowView = null;
-        // 三个 contentView 都为 null，则直接返回
-        if (contentViewAsUp == null && contentViewAsDown == null && defaultContentView == null) {
-            Log.e(TAG, "show method: there is no one view can be shown!");
-            return;
-        }
-
-        int[] boundaryCoordinate = new int[4]; // minX, maxX, minY, maxY; 4 个临界坐标值
-        // 获取当前依附 view 在屏幕中的位置和宽度
-        int anchorViewWidth = anchorView.getWidth();
-        int anchorViewHeight = anchorView.getHeight();
-        int[] anchorViewLocation = new int[2];
+        int[] boundaryCoordinate = new int[4];
         ViewParent parent = anchorView.getParent();
         // 确保 Window 不会显示在父容器外面
         if (parent instanceof ViewGroup) {
@@ -314,10 +279,100 @@ public class ItemOperateView extends PopupWindow {
             // 获取 anchorView 在屏幕中的位置
             anchorView.getLocationOnScreen(anchorViewLocation);
         }
+        return boundaryCoordinate;
+    }
+
+    /**
+     * @param nowOffsetX         当前 x 方向的偏移值，当前为使得 curShowView 相对 anchorView 居中的偏移值
+     * @param curShowView        当前显示的 contentView
+     * @param curShowViewSize    当前显示的 contentView 的尺寸(width, height)
+     * @param anchorView         弹出 view 的依附 view
+     * @param anchorViewLocation anchorView 在其依附的 Window 中的坐标（x, y）
+     * @param boundaryCoordinate 当前的坐标值边界数组（minX, maxX, minY, maxY）
+     * @param isShowUp           是否显示在 anchorView 上方
+     * @return 最终的 x 方向的偏移值
+     */
+    protected int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
+                             View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
+                             int extraX, int extraY, boolean isShowUp) {
+        if (getOffsetCallback != null) {
+            return getOffsetCallback.getOffsetX(nowOffsetX, curShowView, curShowViewSize,
+                    anchorView, anchorViewLocation, boundaryCoordinate, extraX, extraY, isShowUp);
+        }
+        return nowOffsetX;
+    }
+
+    /**
+     * @param nowOffsetY         当前 y 方向的偏移值，如果显示在 anchorView 下方（isShowUp为 false），则为 0，
+     *                           如果显示在 anchorView 上方，则为 (anchorView.height + curShowView.height)
+     * @param curShowView        当前显示的 contentView
+     * @param curShowViewSize    当前显示的 contentView 的尺寸(width, height)
+     * @param anchorView         弹出 view 的依附 view
+     * @param anchorViewLocation anchorView 在其依附的 Window 中的坐标（x, y）
+     * @param boundaryCoordinate 当前的坐标值边界数组（minX, maxX, minY, maxY）
+     * @param isShowUp           是否显示在 anchorView 上方
+     * @return 最终 y 方向的偏移值
+     */
+    protected int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
+                             View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
+                             int extraX, int extraY, boolean isShowUp) {
+        if (getOffsetCallback != null) {
+            return getOffsetCallback.getOffsetY(nowOffsetY, curShowView, curShowViewSize,
+                    anchorView, anchorViewLocation, boundaryCoordinate, extraX, extraY, isShowUp);
+        }
+        return nowOffsetY;
+    }
+
+    /**
+     * 显示当前 popupWindow，默认先尝试将 contentView 显示在描点 View 的上面
+     * 要显示的 contentView 判断流程：
+     * 显示在上面：contentViewAsUp -> defaultContentView；
+     * 显示在下面：contentViewAsDown -> defaultContentView
+     * contentViewAsUp 只能用于显示在 anchorView 上方
+     * contentViewAsDown 只能用于显示在 anchorView 下方
+     * defaultContentView 可以用于 anchorView 上下显示
+     * see {@link #getNextShowView(int, int, int, int)}
+     *
+     * @param anchorView popupWindow 显示依附的描点 View
+     */
+    public void show(@NonNull View anchorView) {
+        show(anchorView, 0, 0);
+    }
+
+    /**
+     * 展示当前 ItemOperateView，contentView 的选择流程见 {@link #show(View)}
+     * @param anchorView ItemOperateView 依附的 view
+     * @param extraX 额外的 x 方向偏移量，可以添加显示位置控制
+     * @param extraY 额外的 y 方向偏移量
+     */
+    public void show(@NonNull View anchorView, int extraX, int extraY) {
+        if (anchorView == null) {
+            throw new IllegalArgumentException(TAG + "argument anchorView can not be null!");
+        }
+        nextShowView = null;
+        // 三个 contentView 都为 null，则直接返回
+        if (contentViewAsUp == null && contentViewAsDown == null && defaultContentView == null) {
+            Log.e(TAG, "show method: there is no one view can be shown!");
+            return;
+        }
+        // 获取当前依附 view 在屏幕中的位置和宽度
+        int anchorViewWidth = anchorView.getWidth();
+        int anchorViewHeight = anchorView.getHeight();
+        int[] anchorViewLocation = new int[2];
+        // 获取 minX, maxX, minY, maxY; 4 个临界坐标值
+        int[] boundaryCoordinate = getBoundaryCoordinate(anchorView, anchorViewLocation);
+        if (boundaryCoordinate == null) {
+            if (DEBUG) {
+                throw new IllegalStateException("show: boundaryCoordinate is null!");
+            }
+            Log.e(TAG, "show: got boundaryCoordinate is null!");
+            return ;
+        }
         // 获取要显示的 contentView
-        getNextShowView(anchorViewLocation, anchorViewHeight, boundaryCoordinate[2], boundaryCoordinate[3]);
+        getNextShowView(anchorViewLocation[1] + extraY,
+                anchorViewHeight, boundaryCoordinate[2], boundaryCoordinate[3]);
         if (nextShowView == null || nextShowViewSize == null) {
-            Log.e(TAG, "there is no one view can be shown, please check contentView is too higher?");
+            Log.e(TAG, "there is no one view can be shown, please check if contentView is too higher?");
             return;
         }
         if (DEBUG) {
@@ -330,28 +385,30 @@ public class ItemOperateView extends PopupWindow {
         if (getContentView() != nextShowView) {
             setCurrentContentViewWithoutMeasure(nextShowView);
         }
-
+        // 得到 x y 方向上的偏移值
         int[] offset = calculateOffset(anchorViewHeight, extraX, extraY);
         offset[0] = getOffsetX(offset[0], nextShowView, nextShowViewSize, anchorView,
-                anchorViewLocation, boundaryCoordinate, isNextShowUp);
+                anchorViewLocation, boundaryCoordinate, extraX, extraY, isNextShowUp);
         offset[1] = getOffsetY(offset[1], nextShowView, nextShowViewSize, anchorView,
-                anchorViewLocation, boundaryCoordinate, isNextShowUp);
-        adjustOffsetX(offset, boundaryCoordinate[0], boundaryCoordinate[1]);
+                anchorViewLocation, boundaryCoordinate, extraX, extraY, isNextShowUp);
+        // 调整 x y 方向的偏移值，防止其超出 parent container / 屏幕外
+        adjustOffset(offset, anchorViewWidth, anchorViewHeight, anchorViewLocation, boundaryCoordinate);
         PopupWindowCompat.showAsDropDown(this, anchorView, offset[0], offset[1], Gravity.START);
     }
 
     /**
-     * 获取 x 和 y 方向偏移值的接口，
-     * 参数含义见 {@link ItemOperateView#getOffsetX(int, View, int[], View, int[], int[], boolean)},
-     * {@link ItemOperateView#getOffsetY(int, View, int[], View, int[], int[], boolean)}
+     * 获取 x 和 y 方向偏移值的接口
+     * 参数含义见 {@link ItemOperateView#getOffsetY(int, View, int[], View, int[], int[], int, int, boolean)},
+     * {@link ItemOperateView#getOffsetY(int, View, int[], View, int[], int[], int, int, boolean)}
      */
     public interface GetOffsetCallback {
         int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
-                       View anchorView, int[] anchorViewLocation,
-                       int[] boundaryCoordinate, boolean isShowUp);
+                       View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
+                       int extraX, int extraY, boolean isShowUp);
+
         int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
-                       View anchorView, int[] anchorViewLocation,
-                       int[] boundaryCoordinate, boolean isShowUp);
+                       View anchorView, int[] anchorViewLocation, int[] boundaryCoordinate,
+                       int extraX, int extraY, boolean isShowUp);
     }
 }
 
