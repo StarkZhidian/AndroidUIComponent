@@ -6,4 +6,4 @@ see: [itemoperateview](https://github.com/StarkZhidian/AndroidUIComponent/tree/m
 
 **SlideOperateItemView**:<br>
 An UI component that can be shown by left slide gesture, it provide an operate view for some item, the operate view need you to provide.<br>
-see[SlideOperateItemView](https://github.com/StarkZhidian/AndroidUIComponent/tree/master/slideoperateitemview)
+see: [SlideOperateItemView](https://github.com/StarkZhidian/AndroidUIComponent/tree/master/slideoperateitemview)
