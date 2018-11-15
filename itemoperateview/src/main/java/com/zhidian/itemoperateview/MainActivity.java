@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         init();
-        example2();
+        example1();
     }
 
     @Override

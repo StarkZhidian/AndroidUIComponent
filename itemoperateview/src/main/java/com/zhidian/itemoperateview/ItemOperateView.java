@@ -317,7 +317,7 @@ public class ItemOperateView extends PopupWindow {
         // 获取要显示的 contentView
         getNextShowView(anchorViewLocation, anchorViewHeight, boundaryCoordinate[2], boundaryCoordinate[3]);
         if (nextShowView == null || nextShowViewSize == null) {
-            Log.e(TAG, "没有 contentView 可展示, 请确认 contentView 高度是否过高");
+            Log.e(TAG, "there is no one view can be shown, please check contentView is too higher?");
             return;
         }
         if (DEBUG) {
