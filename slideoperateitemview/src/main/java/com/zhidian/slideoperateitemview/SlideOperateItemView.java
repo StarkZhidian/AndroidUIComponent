@@ -17,7 +17,7 @@ import android.widget.Scroller;
  */
 
 public class SlideOperateItemView extends ViewGroup {
-
+    private static final String TAG = "SlideOperateItemView";
     // 触发的滑动 x 方向滑动距离占 operateView 宽度的最小比例
     public float startScrollXYMinRatio = 0.2f;
     // 拦截滑动事件时的 x y 方向滑动距离最小比例
@@ -165,21 +165,18 @@ public class SlideOperateItemView extends ViewGroup {
 
         int childCount = getChildCount();
         View childView;
-        ViewGroup.LayoutParams childLP = null;
-        // 记录子 View 的宽度和高度模式是否为 MATCH_PARENT ，
+        ViewGroup.LayoutParams childLP;
+        // 记录子 View 的高度模式是否为 MATCH_PARENT ，
         // 如果是，那么如果当前 ViewGroup 的高度模式为 WRAP_CONTENT 时要特殊处理，
         boolean[] heightMatchParentMark = new boolean[childCount];
-        boolean[] widthMatchParentMark = new boolean[childCount];
         for (int i = 0; i < childCount; i++) {
             childView = getChildAt(i);
             childLP = childView.getLayoutParams();
-            if (childLP.width == LayoutParams.MATCH_PARENT) {
-                widthMatchParentMark[i] = true;
-            }
             if (childLP.height == LayoutParams.MATCH_PARENT) {
                 heightMatchParentMark[i] = true;
             }
         }
+        // 测量子 View
         for (int i = 0; i < getChildCount(); i++) {
             childView = getChildAt(i);
             if (childView.getVisibility() != View.GONE) {
@@ -188,55 +185,50 @@ public class SlideOperateItemView extends ViewGroup {
                         heightMeasureSpec, 0);
             }
         }
-        // 记录是否需要重新测量一遍子 View
-        boolean needMeasureAgain = false;
+        // 处理当前 ViewGroup 宽度测量模式为 wrap_content 的情况
         if (widthMode == MeasureSpec.AT_MOST || widthMode == MeasureSpec.UNSPECIFIED) {
             width = 0;
             for (int i = 0; i < childCount; i++) {
-                childView = getChildAt(i);
-                width += childView.getMeasuredWidth();
-            }
-            // 如果有子 View 的宽度模式为 MATCH_PARENT ，
-            // 那么需要重新测量一遍子 View，保证其的宽度和父容器的宽度相同
-            for (int i = 0; i < childCount; i++) {
-                childView = getChildAt(i);
-                if (widthMatchParentMark[i]) {
-                    childView.getLayoutParams().width = width;
-                    needMeasureAgain = true;
-                }
-            }
-            // 处理子 View 的横向 margin ，即当前 ViewGroup 的宽度要加上子 View 的 leftMargin 和 rightMargin
-            for (int i = 0; i < childCount; i++) {
-                childView = getChildAt(i);
-                childLP = childView.getLayoutParams();
-                if (childLP instanceof LayoutParams) {
-                    width += ((LayoutParams) childLP).leftMargin + ((LayoutParams) childLP).rightMargin;
+                if ((childView = getChildAt(i)) != null && childView.getVisibility() != GONE) {
+                    width += childView.getMeasuredWidth();
+                    // 处理子 View 的横向 margin ，即当前 ViewGroup 的宽度要加上子 View 的 leftMargin 和 rightMargin
+                    if ((childLP = childView.getLayoutParams()) instanceof LayoutParams) {
+                        width += ((LayoutParams) childLP).leftMargin + ((LayoutParams) childLP).rightMargin;
+                    }
                 }
             }
             // 最后加上 ViewGroup 本身横向的 padding 值
             width += paddingLeft + paddingRight;
         }
+        // 记录是否需要重新测量一遍子 View
+        boolean needMeasureAgain = false;
         if (heightMode == MeasureSpec.AT_MOST || heightMode == MeasureSpec.UNSPECIFIED) {
             height = 0;
+            // 求出当前 ViewGroup 的高度
             for (int i = 0; i < childCount; i++) {
-                childView = getChildAt(i);
-                height = Math.max(height, childView.getMeasuredHeight());
+                if ((childView = getChildAt(i)) != null && childView.getVisibility() != GONE) {
+                    // 算上当前子 View 的布局参数存在 topMargin 和 bottomMargin
+                    if ((childLP = childView.getLayoutParams()) instanceof LayoutParams) {
+                        height = Math.max(height, childView.getMeasuredHeight() +
+                                ((LayoutParams) childLP).topMargin + ((LayoutParams) childLP).bottomMargin);
+                    } else {
+                        height = Math.max(height, childView.getMeasuredHeight());
+                    }
+                }
             }
             // 如果有子 View 的高度模式为 MATCH_PARENT ，那么需要重新测量一遍子 View，
             // 保证子 View 的高度和父容器相同。
             for (int i = 0; i < childCount; i++) {
-                childView = getChildAt(i);
-                if (heightMatchParentMark[i]) {
+                if (heightMatchParentMark[i] && (childView = getChildAt(i)) != null &&
+                        childView.getVisibility() != GONE) {
+                    childLP = childView.getLayoutParams();
                     childView.getLayoutParams().height = height;
+                    // 除去当前 childView 本身的 marginTop 和  marginBottom 的干扰
+                    if (childLP instanceof LayoutParams) {
+                        childLP.height -= ((LayoutParams) childLP).topMargin +
+                                ((LayoutParams) childLP).bottomMargin;
+                    }
                     needMeasureAgain = true;
-                }
-            }
-            // 处理子 View 的竖向 margin。当前 ViewGroup 要加上子 View 的 topMargin 和 bottomMargin
-            for (int i = 0; i < childCount; i++) {
-                childView = getChildAt(i);
-                childLP = childView.getLayoutParams();
-                if (childLP instanceof LayoutParams) {
-                    height += ((LayoutParams) childLP).topMargin + ((LayoutParams) childLP).bottomMargin;
                 }
             }
             // 最后加上 ViewGroup 本身的竖向的 padding 值
@@ -245,7 +237,8 @@ public class SlideOperateItemView extends ViewGroup {
         // 如果 needMeasureAgain 为 true ，证明有子 View 的宽/高的布局参数为 MATCH_PARENT，
         // 则需要再测量一次子 View
         if (needMeasureAgain) {
-            measureChildren(widthMeasureSpec, heightMeasureSpec);
+            measureChildren(MeasureSpec.makeMeasureSpec(width, widthMode),
+                    MeasureSpec.makeMeasureSpec(height, heightMode));
         }
         setMeasuredDimension(width, height);
     }
@@ -382,7 +375,7 @@ public class SlideOperateItemView extends ViewGroup {
         return result;
     }
 
-    // 生成子 View 的布局参数
+    // 生成子 View 的布局参数，当有子 view 被该 ViewGroup 包裹时方法会被调用
     @Override
     public LayoutParams generateLayoutParams(AttributeSet attrs) {
         return new LayoutParams(getContext(), attrs);
