@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.zhidian.slideoperateitemview.SlideOperateItemView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/slideOperateItemView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:background="@android:color/holo_blue_bright"
+        android:paddingBottom="@android:dimen/app_icon_size"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TextView
+            android:id="@+id/itemViewTextView"
+            android:text="指点"
+            android:textAlignment="center"
+            android:textColor="@android:color/black"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </LinearLayout>
+    <Button
+        android:text="删除"
+        android:layout_marginTop="30px"
+        android:id="@+id/itemViewButton"
+        android:background="@android:color/holo_red_dark"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent" />
+</com.zhidian.slideoperateitemview.SlideOperateItemView>
