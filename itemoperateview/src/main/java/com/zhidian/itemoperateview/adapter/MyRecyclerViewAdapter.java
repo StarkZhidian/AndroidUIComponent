@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.zhidian.itemoperateview.MyConstraintLayout;
+import com.zhidian.itemoperateview.custom_view.MyConstraintLayout;
 import com.zhidian.itemoperateview.R;
 
 import java.util.List;
@@ -22,8 +22,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewHo
 
     private static final String TAG = MyRecyclerViewAdapter.class.getSimpleName();
     private static final int[] COLORS = new int[]{
-            Color.DKGRAY, Color.GRAY, Color.LTGRAY, Color.WHITE,
-            Color.RED, Color.BLUE, Color.YELLOW, Color.CYAN, Color.MAGENTA};
+            Color.WHITE, Color.RED, Color.BLUE, Color.YELLOW, Color.CYAN, Color.MAGENTA};
     private List<String> data;
     private ItemLongClickListener itemLongClickListener;
 

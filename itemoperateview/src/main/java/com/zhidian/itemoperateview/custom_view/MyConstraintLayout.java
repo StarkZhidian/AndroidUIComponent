@@ -1,13 +1,15 @@
-package com.zhidian.itemoperateview;
+package com.zhidian.itemoperateview.custom_view;
 
 import android.content.Context;
 import android.support.constraint.ConstraintLayout;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
 public class MyConstraintLayout extends ConstraintLayout {
+    private static final String TAG = MyConstraintLayout.class.getSimpleName();
 
     public enum TouchEventType {
         ON_DOWN, ON_SHOW_PRESS, ON_SINGLE_TAP_UP, ON_SCROLL, ON_LONG_PRESS, ON_FLING
@@ -78,6 +80,7 @@ public class MyConstraintLayout extends ConstraintLayout {
 
             @Override
             public void onLongPress(MotionEvent motionEvent) {
+                Log.e(TAG, motionEvent.getAction() + "");
                 if (touchEventListener != null) {
                     touchEventListener.onTouchEvent(MyConstraintLayout.this,
                             TouchEventType.ON_LONG_PRESS, motionEvent);

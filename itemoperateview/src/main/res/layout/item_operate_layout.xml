@@ -1,38 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:triangle="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:background="@android:color/darker_gray"
-    android:orientation="horizontal"
-    android:padding="5dp">
+    android:layout_height="wrap_content">
 
     <TextView
+        android:id="@+id/item_operate_copy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
         android:gravity="center"
-        android:text="  复制  " />
+        android:padding="5dp"
+        android:text="  复制  "
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/item_operate_forward"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/item_operate_forward"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
         android:gravity="center"
-        android:text="  转发  " />
+        android:padding="5dp"
+        android:text="  转发  "
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/item_operate_delete"
+        app:layout_constraintRight_toLeftOf="@id/item_operate_copy"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/item_operate_delete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
         android:gravity="center"
-        android:text="  删除  " />
+        android:padding="5dp"
+        android:text="  删除  "
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/item_operate_forward"
+        app:layout_constraintRight_toLeftOf="@id/item_operate_collection"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.zhidian.itemoperateview.custom_view.TriangleView
+        android:id="@+id/triangle"
+        android:layout_width="13dp"
+        android:layout_height="8dp"
+        triangle:color="@android:color/darker_gray"
+        app:layout_constraintBottom_toTopOf="@id/item_operate_delete"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <com.zhidian.itemoperateview.custom_view.TriangleView
+        android:id="@+id/triangle_handstand"
+        android:layout_width="13dp"
+        android:layout_height="8dp"
+        triangle:isHandstand="true"
+        triangle:color="@android:color/darker_gray"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/item_operate_delete" />
 
     <TextView
+        android:id="@+id/item_operate_collection"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
         android:gravity="center"
-        android:text="  收藏  " />
+        android:padding="5dp"
+        android:text="  收藏  "
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/item_operate_delete"
+        app:layout_constraintRight_toRightOf="@id/item_operate_recall"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/item_operate_recall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
         android:gravity="center"
-        android:text="  撤回  " />
-</LinearLayout>
+        android:padding="5dp"
+        android:text="  撤回  "
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/item_operate_collection"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</android.support.constraint.ConstraintLayout>

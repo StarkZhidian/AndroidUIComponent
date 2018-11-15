@@ -1,5 +1,6 @@
 package com.zhidian.itemoperateview;
 
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onItemClick(View view, MotionEvent event, String data, int index) {
                 if (itemOperateView != null) {
                     itemOperateView.show(view, (int) event.getY());
+//                    itemOperateView.show(view);
                 }
                 return false;
             }
@@ -49,12 +51,12 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(
                 this, LinearLayoutManager.VERTICAL, false));
         itemOperateView = new ItemOperateView(this, R.layout.item_operate_layout);
-        LinearLayout upView = (LinearLayout) LayoutInflater.from(this).inflate(
+        ConstraintLayout upView = (ConstraintLayout) LayoutInflater.from(this).inflate(
                 R.layout.item_operate_layout, null);
-        upView.getChildAt(0).setVisibility(View.GONE);
-        LinearLayout downView = (LinearLayout) LayoutInflater.from(this).inflate(
+        upView.findViewById(R.id.triangle).setVisibility(View.GONE);
+        ConstraintLayout downView = (ConstraintLayout) LayoutInflater.from(this).inflate(
                 R.layout.item_operate_layout, null);
-        downView.getChildAt(downView.getChildCount() - 1).setVisibility(View.GONE);
+        downView.findViewById(R.id.triangle_handstand).setVisibility(View.GONE);
         itemOperateView.setContentViewAsUp(upView);
         itemOperateView.setContentViewAsDown(downView);
         initData();
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        // 防止窗体泄漏
         if (itemOperateView.isShowing()) {
             itemOperateView.dismiss();
         }
