@@ -3,4 +3,4 @@
  
 #### 演示：
 
-![](https://github.com/StarkZhidian/SlideOperateItemView/blob/master/SlideOperateItemView.gif)
+![](https://github.com/StarkZhidian/AndroidUIComponent/blob/master/slideoperateitemview/SlideOperateItemView.gif)
