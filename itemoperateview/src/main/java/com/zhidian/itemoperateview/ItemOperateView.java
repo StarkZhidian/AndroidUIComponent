@@ -35,9 +35,8 @@ public class ItemOperateView extends PopupWindow {
     private static final boolean DEBUG = true;
 
     private Context context;
-    // titleBar 的高度、相对于屏幕左上角的 x 坐标和 y 坐标
-    private int titleBarHeight;
-    private int[] titleBarCoordinate = new int[2];
+    // 获取 x 和 y 方向偏移值的接口
+    private GetOffsetCallback getOffsetCallback;
     // 显示在描点 View 上下两侧和默认的 contentView
     private View contentViewAsUp;
     private View contentViewAsDown;
@@ -103,27 +102,8 @@ public class ItemOperateView extends PopupWindow {
         setDefaultContentView(contentView);
     }
 
-    // 设置使用 OperateItemPopupWindow 的在的 Activity 的标题栏,
-    // 防止当描点 View 接近标题栏时 popupWindow 显示在标题栏上
-    public void setTitleBar(@Nullable final View titleBar) {
-        if (titleBar == null) {
-            titleBarCoordinate[0] = titleBarCoordinate[1] = titleBarHeight = 0;
-            return;
-        }
-        // 为了防止该方法调用的时候 View 的绘制流程还没走完，取到 0 值
-        // 在这里通过 titleBar 的 post 方法提交一个 Runnable 到主线程消息队列末尾，
-        // 执行这个 Runnable 的时候整个 Window 的 View 树已经绘制完成
-        titleBar.post(new Runnable() {
-            @Override
-            public void run() {
-                // 获取 titleBar 在屏幕中的坐标
-                titleBar.getLocationOnScreen(titleBarCoordinate);
-                // 获取标题栏的高度
-                titleBarHeight = titleBar.getHeight();
-                Log.d(TAG, "titleBar position、height: " +
-                        titleBarCoordinate[0] + ", " + titleBarCoordinate[1] + ", " + titleBarHeight);
-            }
-        });
+    public void setGetOffsetCallback(GetOffsetCallback getOffsetCallback) {
+        this.getOffsetCallback = getOffsetCallback;
     }
 
     // 设置显示在 anchorView 上面的 contentView
@@ -216,13 +196,9 @@ public class ItemOperateView extends PopupWindow {
     }
 
     // 计算 x y 坐标的偏移
-    private int[] calculateOffset(int anchorViewWidth, int anchorViewHeight, int minX, int maxX,
-                                  int extraX, int extraY) {
-        // 水平居中显示
-        int xOffset = (anchorViewWidth - nextShowViewSize[0]) / 2 + extraX;
-        // 防止水平方向偏移越界
-        xOffset = (xOffset < minX ? minX : xOffset) >
-                maxX - nextShowViewSize[0] ? maxX - nextShowViewSize[0] : xOffset;
+    private int[] calculateOffset(int anchorViewHeight, int extraX, int extraY) {
+        // 默认 x 轴和 anchorView 左对齐 + extraX
+        int xOffset = extraX;
         // y 方向偏移
         int yOffset = extraY - anchorViewHeight;
         // 如果显示在 anchorView 上面，重新计算 y 方向偏移量
@@ -235,6 +211,12 @@ public class ItemOperateView extends PopupWindow {
             Log.d(TAG, "content view 应该显示在下面");
         }
         return new int[]{xOffset, yOffset};
+    }
+
+    private void adjustOffsetX(int[] offset, int minX, int maxX) {
+        // 防止水平方向偏移越界
+        offset[0] = (offset[0] < minX ? minX : offset[0]) >
+                maxX - nextShowViewSize[0] ? maxX - nextShowViewSize[0] : offset[0];
     }
 
     /**
@@ -250,6 +232,10 @@ public class ItemOperateView extends PopupWindow {
     protected int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
                              View anchorView, int[] anchorViewLocation,
                              int[] boundaryCoordinate, boolean isShowUp) {
+        if (getOffsetCallback != null) {
+            return getOffsetCallback.getOffsetX(nowOffsetX, curShowView, curShowViewSize,
+                    anchorView, anchorViewLocation, boundaryCoordinate, isShowUp);
+        }
         return nowOffsetX;
     }
 
@@ -267,6 +253,10 @@ public class ItemOperateView extends PopupWindow {
     protected int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
                              View anchorView, int[] anchorViewLocation,
                              int[] boundaryCoordinate, boolean isShowUp) {
+        if (getOffsetCallback != null) {
+            return getOffsetCallback.getOffsetY(nowOffsetY, curShowView, curShowViewSize,
+                    anchorView, anchorViewLocation, boundaryCoordinate, isShowUp);
+        }
         return nowOffsetY;
     }
 
@@ -283,15 +273,6 @@ public class ItemOperateView extends PopupWindow {
      */
     public void show(@NonNull View anchorView) {
         show(anchorView, 0, 0);
-    }
-
-    /**
-     * 显示当前 popupWindow ，流程和上面相同，但是显示在 anchorView 中指定的高度
-     * @param anchorView
-     * @param height
-     */
-    public void show(@NonNull View anchorView, int height) {
-        show(anchorView, 0, height);
     }
 
     public void show(@NonNull View anchorView, int extraX, int extraY) {
@@ -350,13 +331,27 @@ public class ItemOperateView extends PopupWindow {
             setCurrentContentViewWithoutMeasure(nextShowView);
         }
 
-        int[] offset = calculateOffset(anchorViewWidth, anchorViewHeight,
-                boundaryCoordinate[0], boundaryCoordinate[1], extraX, extraY);
+        int[] offset = calculateOffset(anchorViewHeight, extraX, extraY);
         offset[0] = getOffsetX(offset[0], nextShowView, nextShowViewSize, anchorView,
                 anchorViewLocation, boundaryCoordinate, isNextShowUp);
         offset[1] = getOffsetY(offset[1], nextShowView, nextShowViewSize, anchorView,
                 anchorViewLocation, boundaryCoordinate, isNextShowUp);
+        adjustOffsetX(offset, boundaryCoordinate[0], boundaryCoordinate[1]);
         PopupWindowCompat.showAsDropDown(this, anchorView, offset[0], offset[1], Gravity.START);
+    }
+
+    /**
+     * 获取 x 和 y 方向偏移值的接口，
+     * 参数含义见 {@link ItemOperateView#getOffsetX(int, View, int[], View, int[], int[], boolean)},
+     * {@link ItemOperateView#getOffsetY(int, View, int[], View, int[], int[], boolean)}
+     */
+    public interface GetOffsetCallback {
+        int getOffsetX(int nowOffsetX, View curShowView, int[] curShowViewSize,
+                       View anchorView, int[] anchorViewLocation,
+                       int[] boundaryCoordinate, boolean isShowUp);
+        int getOffsetY(int nowOffsetY, View curShowView, int[] curShowViewSize,
+                       View anchorView, int[] anchorViewLocation,
+                       int[] boundaryCoordinate, boolean isShowUp);
     }
 }
 
