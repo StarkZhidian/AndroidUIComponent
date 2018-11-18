@@ -1,4 +1,4 @@
-## Some UI component for android develop
+## Some UI component for android development
 now including: <br><br>
 **ItemOperateView**:<br>
 An UI component that provide an operate menu view for some item, the operate menu view need you to provide.<br>
