@@ -21,14 +21,12 @@ import java.util.Arrays;
  * 使用 OperateItemPopupWindow 来以弹窗的形式显示对某个 View 的操作选项，
  * contentView 是 popupWindow 中显示的内容 View，对应的触摸事件由调用者自由添加：
  * OperateItemPopupWindow popupWindow = new OperateItemPopupWindow(contentView);
- * popupWindow.setTitleBar(toolbar); // 可选，主要目的是为了防止 popupWindow 显示在 toolbar 上面
- * popupWindow.show(anchorView); // 显示 ItemOperateView，显示的位置由参数指定的 view 的位置决定，
+ * popupWindow.show(anchorView); // 显示 ItemOperateView，显示的位置由参数指定的 view 的位置决定，显示流程见 {@link #show(View)}
  * 在 Activity 摧毁的时候记得调用 popupWindow.dismiss() 方法，以防止窗体泄露:
  * if (popupWindow != null && popupWindow.isShowing()) {
  * popupWindow.dismiss();
  * }
  * popupWindow = null;
- * 显示流程见 {@link #show(View)}
  */
 public class ItemOperateView extends PopupWindow {
     private static final String TAG = "ItemOperateView";
